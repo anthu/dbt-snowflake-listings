@@ -1,0 +1,5 @@
+packages:
+  - git: "https://github.com/anthu/dbt-snowflake-listings.git"
+    revision: v0.1.0
+  - package: Snowflake-Labs/dbt_semantic_view
+    version: 1.0.3

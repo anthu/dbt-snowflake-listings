@@ -1,0 +1,9 @@
+models:
+  - name: stg_nation
+    description: "Nation dimension from SNOWFLAKE_SAMPLE_DATA TPC-H"
+
+  - name: stg_region
+    description: "Region dimension from SNOWFLAKE_SAMPLE_DATA TPC-H"
+
+  - name: stg_customer
+    description: "Customer table from SNOWFLAKE_SAMPLE_DATA TPC-H (limited to 1000 rows)"

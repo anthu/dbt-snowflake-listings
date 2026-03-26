@@ -1,0 +1,33 @@
+# dbt artifacts
+target/
+dbt_packages/
+dbt_modules/
+logs/
+package-lock.yml
+.user.yml
+
+# Profiles with credentials
+profiles.yml
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Snowflake
+connections.toml

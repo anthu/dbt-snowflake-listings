@@ -1,0 +1,20 @@
+models:
+  - name: test_org_listing
+    description: "Integration test organization listing"
+    config:
+      meta:
+        listing_manifest:
+          title: "Integration Test Listing"
+          description: |
+            Automated integration test listing for dbt_snowflake_listings.
+            Contains nation, region, and customer sample data from TPC-H.
+          organization_profile: "INTERNAL"
+          organization_targets:
+            access:
+              - all_internal_accounts: true
+          locations:
+            access_regions:
+              - name: "ALL"
+          auto_fulfillment:
+            refresh_type: "SUB_DATABASE"
+            refresh_schedule: "10 MINUTE"

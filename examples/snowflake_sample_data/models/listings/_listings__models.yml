@@ -1,0 +1,70 @@
+models:
+  - name: tpch_sample_listing
+    description: >
+      Organization listing that shares TPC-H benchmark sample data and a
+      Semantic View with all accounts in the organization via the Internal Marketplace.
+    config:
+      meta:
+        listing_manifest:
+          title: "TPC-H Sample Data with Semantic View"
+          description: |
+            Sample data from the TPC-H benchmark dataset, sourced from
+            Snowflake's SNOWFLAKE_SAMPLE_DATA database.
+
+            **Data Tables:**
+            - **Nations** (25 rows) -- world nations with region mapping
+            - **Regions** (5 rows) -- continental regions
+            - **Customers** (5,000 rows) -- customer demographics and account info
+            - **Orders** (10,000 rows) -- order headers with status and pricing
+
+            **Knowledge Extensions:**
+            - **Semantic View** (customer_analytics_sv) -- enables Cortex Analyst
+              to answer natural-language questions about customer and order data
+              with pre-defined metrics like total revenue, average order value,
+              and customer counts by segment and region.
+          organization_profile: "INTERNAL"
+          organization_targets:
+            access:
+              - all_internal_accounts: true
+          locations:
+            access_regions:
+              - name: "ALL"
+          auto_fulfillment:
+            refresh_type: "SUB_DATABASE"
+            refresh_schedule: "10 MINUTE"
+          usage_examples:
+            - title: "Revenue by region via Semantic View"
+              description: "Use the semantic view to get pre-defined metrics by region"
+              query: >
+                SELECT * FROM semantic_view(
+                    CUSTOMER_ANALYTICS_SV
+                    METRICS total_revenue, order_count, customer_count
+                    DIMENSIONS region_name
+                )
+            - title: "Top customers by order volume"
+              description: "Find the most active customers by number of orders placed"
+              query: >
+                SELECT
+                    c.CUSTOMER_NAME,
+                    c.MARKET_SEGMENT,
+                    COUNT(*) AS order_count,
+                    SUM(o.TOTAL_PRICE) AS total_spend
+                FROM STG_TPCH_CUSTOMER c
+                JOIN STG_TPCH_ORDERS o ON c.CUSTOMER_KEY = o.CUSTOMER_KEY
+                GROUP BY 1, 2
+                ORDER BY order_count DESC
+                LIMIT 20
+            - title: "Orders by region"
+              description: "Aggregate order metrics by world region"
+              query: >
+                SELECT
+                    r.REGION_NAME,
+                    COUNT(DISTINCT c.CUSTOMER_KEY) AS customers,
+                    COUNT(*) AS orders,
+                    ROUND(SUM(o.TOTAL_PRICE), 2) AS revenue
+                FROM STG_TPCH_ORDERS o
+                JOIN STG_TPCH_CUSTOMER c ON o.CUSTOMER_KEY = c.CUSTOMER_KEY
+                JOIN STG_TPCH_NATION n ON c.NATION_KEY = n.NATION_KEY
+                JOIN STG_TPCH_REGION r ON n.REGION_KEY = r.REGION_KEY
+                GROUP BY 1
+                ORDER BY revenue DESC

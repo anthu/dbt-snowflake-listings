@@ -1,0 +1,6 @@
+models:
+  - name: customer_analytics_sv
+    description: >
+      Semantic view over TPC-H customer, orders, nations, and regions data.
+      Provides business-friendly metrics and dimensions for Cortex Analyst
+      and direct SQL querying via semantic_view() function.

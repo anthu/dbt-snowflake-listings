@@ -1,0 +1,12 @@
+models:
+  - name: stg_tpch_nation
+    description: "25 nations from the TPC-H benchmark dataset"
+
+  - name: stg_tpch_region
+    description: "5 world regions from the TPC-H benchmark dataset"
+
+  - name: stg_tpch_customer
+    description: "First 5000 customers from the TPC-H benchmark dataset"
+
+  - name: stg_tpch_orders
+    description: "First 10000 orders from the TPC-H benchmark dataset"
