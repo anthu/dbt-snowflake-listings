@@ -35,8 +35,9 @@ can truncate that SQL and return `syntax error … unexpected '<EOF>'`, while
 **dbt Core** + open-source `dbt-snowflake` often succeed. This package works
 around that by wrapping listing DDL in **`EXECUTE IMMEDIATE $$ … $$`**.
 
-**Pin a released package version** (see `sources/dbt_example/packages.yml`) that
-includes that workaround — do not rely on floating `main` for production deploys.
+**Pin a released package version** (see `sources/dbt_example/packages.yml`; currently
+`v0.2.1`) so Snowflake `dbt deps` resolves a revision that includes the workaround.
+Until that tag exists on GitHub, use `revision: main` or a **commit SHA** temporarily.
 Details: [dbt Projects on Snowflake](../../docs/snowflake-projects.md).
 
 ## Prerequisites
