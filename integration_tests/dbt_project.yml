@@ -8,6 +8,10 @@ model-paths: ["models"]
 macro-paths: ["macros"]
 test-paths: ["tests"]
 
+vars:
+  integration_listing_name: TEST_ORG_LISTING
+  integration_share_name: DBT_MARKETPLACE_TEST_SHARE
+
 models:
   dbt_snowflake_listings_integration_tests:
     staging:

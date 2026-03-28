@@ -4,7 +4,7 @@
     It fails (returns 1 row) when the listing does not exist.
 #}
 
-{% set listing_name = 'TEST_ORG_LISTING' %}
+{% set listing_name = var('integration_listing_name', 'TEST_ORG_LISTING') %}
 
 {% set result = run_query("SHOW LISTINGS LIKE '" ~ listing_name ~ "'") %}
 
