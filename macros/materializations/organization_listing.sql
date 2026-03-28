@@ -99,18 +99,14 @@
 
         {{ dbt_snowflake_listings._log_action('CREATE', 'ORGANIZATION LISTING', listing_name) }}
 
-        {# Tagged outer $DBT_LISTING_DYN$...$DBT_LISTING_DYN$: one client batch for native dbt,
-           while inner $$...$$ is the manifest delimiter Snowflake expects on CREATE LISTING. #}
         {% call statement('main', fetch_result=false) %}
-            EXECUTE IMMEDIATE $DBT_LISTING_DYN$
-            CREATE ORGANIZATION LISTING {{ listing_name }}
-            SHARE {{ share_name }}
-            AS
-            $$
+                CREATE ORGANIZATION LISTING {{ listing_name }}
+                    SHARE {{ share_name }}
+                    AS
+                    $$
 {{ manifest_yaml }}
 $$
-            PUBLISH = {{ publish | upper }};
-            $DBT_LISTING_DYN$;
+                    PUBLISH = {{ publish | upper }}
         {% endcall %}
 
     {% else %}
@@ -118,14 +114,11 @@ $$
         {{ dbt_snowflake_listings._log_action('ALTER', 'ORGANIZATION LISTING', listing_name) }}
 
         {% call statement('main', fetch_result=false) %}
-            EXECUTE IMMEDIATE $DBT_LISTING_DYN$
-            ALTER LISTING {{ listing_name }}
-            AS
-            $$
+                ALTER LISTING {{ listing_name }}
+                    AS
+                    $$
 {{ manifest_yaml }}
 $$
-            ;
-            $DBT_LISTING_DYN$;
         {% endcall %}
 
         {% if publish %}
