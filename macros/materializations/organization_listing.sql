@@ -99,18 +99,18 @@
 
         {{ dbt_snowflake_listings._log_action('CREATE', 'ORGANIZATION LISTING', listing_name) }}
 
-        {# EXECUTE IMMEDIATE $$...$$: native dbt on Snowflake can split on ';' before the
-           manifest $$ block, truncating CREATE ORGANIZATION LISTING. Outer $$ keeps one batch. #}
+        {# Tagged outer $DBT_LISTING_DYN$...$DBT_LISTING_DYN$: one client batch for native dbt,
+           while inner $$...$$ is the manifest delimiter Snowflake expects on CREATE LISTING. #}
         {% call statement('main', fetch_result=false) %}
-            EXECUTE IMMEDIATE $$
+            EXECUTE IMMEDIATE $DBT_LISTING_DYN$
             CREATE ORGANIZATION LISTING {{ listing_name }}
             SHARE {{ share_name }}
             AS
-            $DBT_SL_MANIFEST$
+            $$
 {{ manifest_yaml }}
-$DBT_SL_MANIFEST$
+$$
             PUBLISH = {{ publish | upper }};
-            $$;
+            $DBT_LISTING_DYN$;
         {% endcall %}
 
     {% else %}
@@ -118,14 +118,14 @@ $DBT_SL_MANIFEST$
         {{ dbt_snowflake_listings._log_action('ALTER', 'ORGANIZATION LISTING', listing_name) }}
 
         {% call statement('main', fetch_result=false) %}
-            EXECUTE IMMEDIATE $$
+            EXECUTE IMMEDIATE $DBT_LISTING_DYN$
             ALTER LISTING {{ listing_name }}
             AS
-            $DBT_SL_MANIFEST$
+            $$
 {{ manifest_yaml }}
-$DBT_SL_MANIFEST$
+$$
             ;
-            $$;
+            $DBT_LISTING_DYN$;
         {% endcall %}
 
         {% if publish %}

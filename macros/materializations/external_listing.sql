@@ -110,19 +110,19 @@
         {{ dbt_snowflake_listings._log_action('CREATE', 'EXTERNAL LISTING', listing_name) }}
 
         {% call statement('main', fetch_result=false) %}
-            EXECUTE IMMEDIATE $$
+            EXECUTE IMMEDIATE $DBT_LISTING_DYN$
             CREATE EXTERNAL LISTING {{ listing_name }}
             SHARE {{ share_name }}
             AS
-            $DBT_SL_MANIFEST$
+            $$
 {{ manifest_yaml }}
-$DBT_SL_MANIFEST$
+$$
             PUBLISH = {{ publish | upper }}
             REVIEW = {{ review | upper }}
             {% if comment %}
             COMMENT = '{{ comment }}'
             {% endif %};
-            $$;
+            $DBT_LISTING_DYN$;
         {% endcall %}
 
     {% else %}
@@ -130,14 +130,14 @@ $DBT_SL_MANIFEST$
         {{ dbt_snowflake_listings._log_action('ALTER', 'EXTERNAL LISTING', listing_name) }}
 
         {% call statement('main', fetch_result=false) %}
-            EXECUTE IMMEDIATE $$
+            EXECUTE IMMEDIATE $DBT_LISTING_DYN$
             ALTER LISTING {{ listing_name }}
             AS
-            $DBT_SL_MANIFEST$
+            $$
 {{ manifest_yaml }}
-$DBT_SL_MANIFEST$
+$$
             ;
-            $$;
+            $DBT_LISTING_DYN$;
         {% endcall %}
 
         {% if publish %}

@@ -23,8 +23,8 @@ may differ.
 
 ## Workaround (package-side)
 
-`dbt_snowflake_listings` wraps listing DDL in **`EXECUTE IMMEDIATE $$ … $$`** so
-the outer dollar-quote spans the full dynamic statement.
+`dbt_snowflake_listings` wraps listing DDL in **`EXECUTE IMMEDIATE $DBT_LISTING_DYN$ … $DBT_LISTING_DYN$`**
+(tagged outer quote) so the dynamic SQL is one client batch; the manifest stays in inner **`$$ … $$`**.
 
 ## Ask Snowflake
 

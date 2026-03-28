@@ -150,9 +150,12 @@ because Snowflake hates listings.”
 dollar-quoted manifest** in the middle of DDL. If the **execution path** that
 runs dbt inside Snowflake **does not** use the same `split_statements` behavior
 (or splits differently), you can see **truncated** SQL and errors like
-`unexpected '<EOF>'`. This package’s `EXECUTE IMMEDIATE $$ … $$` wrapper is a
-**workaround** so the **first** dollar-quote pair spans the whole dynamic DDL,
-matching the same idea as “one outer quoted blob” as the Python sproc body.
+`unexpected '<EOF>'`. This package uses **`EXECUTE IMMEDIATE $DBT_LISTING_DYN$ … $DBT_LISTING_DYN$`**
+(a tagged outer dollar-quote) so the dynamic string is one client batch, while the
+listing manifest still uses inner **`$$ … $$`** as Snowflake expects. A plain
+`EXECUTE IMMEDIATE $$ … $$` with inner `$$` for the manifest is invalid nesting. The tagged
+outer delimiter is the **workaround** so the client sends one batch while Snowflake still
+sees valid inner `$$` manifest quoting.
 
 For a full native dbt fix, the product path should preserve **Snowflake-aware**
 statement splitting (or avoid splitting entirely for one-shot DDL) the same way
