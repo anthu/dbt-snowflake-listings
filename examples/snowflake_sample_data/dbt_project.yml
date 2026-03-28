@@ -5,6 +5,7 @@ config-version: 2
 profile: 'example'
 
 model-paths: ["models"]
+macro-paths: ["macros"]
 
 models:
   snowflake_sample_data_listing_example:

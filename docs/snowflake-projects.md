@@ -50,6 +50,32 @@ for details on network rules and external access integrations.
 > into the project root. See the
 > [example project](../examples/snowflake_sample_data/) for a working setup.
 
+## `generate_schema_name` and `deps_compile`
+
+When Snowflake compiles a dbt project (`deps_compile` phase), the Jinja context
+differs from a local `dbt compile`. In particular, the bare `{{ default_schema }}`
+variable that dbt normally injects is **not available** during `deps_compile`,
+which causes introspection queries like `SHOW OBJECTS IN <db>.<schema>` to emit
+an empty schema name and fail with a syntax error.
+
+If your project overrides `generate_schema_name`, make sure it explicitly
+derives `default_schema` from `target.schema`:
+
+```jinja
+{% macro generate_schema_name(custom_schema_name, node) -%}
+    {%- set default_schema = target.schema -%}
+    {%- if custom_schema_name is none -%}
+        {{ default_schema }}
+    {%- else -%}
+        {{ custom_schema_name | trim }}
+    {%- endif -%}
+{%- endmacro %}
+```
+
+This matches dbt's own internal definition and works correctly in both local and
+Snowflake-hosted execution contexts. The
+[example project](../examples/snowflake_sample_data/) ships this macro by default.
+
 ## Complete Example
 
 See [`examples/snowflake_sample_data/`](../examples/snowflake_sample_data/) for a

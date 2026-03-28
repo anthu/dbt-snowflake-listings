@@ -12,7 +12,7 @@ packages:
   - package: Snowflake-Labs/dbt_semantic_view
     version: 1.0.3
   - git: "https://github.com/anthu/dbt-snowflake-listings.git"
-    revision: v0.1.0
+    revision: v0.2.0
 ```
 
 ```sql

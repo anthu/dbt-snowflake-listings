@@ -38,7 +38,7 @@ Add to your `packages.yml`:
 ```yaml
 packages:
   - git: "https://github.com/anthu/dbt-snowflake-listings.git"
-    revision: v0.1.0
+    revision: v0.2.0
 ```
 
 Then run:

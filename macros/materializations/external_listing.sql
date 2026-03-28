@@ -65,6 +65,8 @@
 
     {% set manifest_yaml = dbt_snowflake_listings._serialize_manifest(listing_manifest) %}
 
+    {% if execute %}
+
     {{ dbt_snowflake_listings._log_action('MATERIALIZING', 'EXTERNAL LISTING', listing_name) }}
 
     {# ── 5. Handle --full-refresh: drop everything and start fresh ─────────── #}
@@ -107,18 +109,27 @@
 
         {{ dbt_snowflake_listings._log_action('CREATE', 'EXTERNAL LISTING', listing_name) }}
 
+        {# Snowflake's manifest validation for CREATE EXTERNAL LISTING
+           internally requires current_schema(), even though listings are
+           account-level objects. In native dbt sessions (EXECUTE DBT PROJECT),
+           the session schema may be unset and USE SCHEMA alone doesn't
+           propagate to the validation engine. Wrapping in a scripting block
+           ensures schema context is set within the same execution unit. #}
         {% call statement('main', fetch_result=false) %}
-            CREATE EXTERNAL LISTING {{ listing_name }}
-            SHARE {{ share_name }}
-            AS
-            $$
+            BEGIN
+                USE SCHEMA {{ model.database }}.{{ model.schema }};
+                CREATE EXTERNAL LISTING {{ listing_name }}
+                    SHARE {{ share_name }}
+                    AS
+                    $$
 {{ manifest_yaml }}
 $$
-            PUBLISH = {{ publish | upper }}
-            REVIEW = {{ review | upper }}
-            {% if comment %}
-            COMMENT = '{{ comment }}'
-            {% endif %}
+                    PUBLISH = {{ publish | upper }}
+                    REVIEW = {{ review | upper }}
+                    {% if comment %}
+                    COMMENT = '{{ comment }}'
+                    {% endif %};
+            END;
         {% endcall %}
 
     {% else %}
@@ -126,11 +137,14 @@ $$
         {{ dbt_snowflake_listings._log_action('ALTER', 'EXTERNAL LISTING', listing_name) }}
 
         {% call statement('main', fetch_result=false) %}
-            ALTER LISTING {{ listing_name }}
-            AS
-            $$
+            BEGIN
+                USE SCHEMA {{ model.database }}.{{ model.schema }};
+                ALTER LISTING {{ listing_name }}
+                    AS
+                    $$
 {{ manifest_yaml }}
-$$
+$$;
+            END;
         {% endcall %}
 
         {% if publish %}
@@ -154,6 +168,8 @@ $$
     {% endif %}
 
     {{ dbt_snowflake_listings._log_action('DONE', 'EXTERNAL LISTING', listing_name) }}
+
+    {% endif %}
 
     {{ return({'relations': []}) }}
 

@@ -31,3 +31,4 @@ venv/
 
 # Snowflake
 connections.toml
+out/

@@ -1,0 +1,24 @@
+example:
+  target: dev
+  outputs:
+
+    # For dbt Projects on Snowflake (EXECUTE DBT PROJECT / snow dbt execute).
+    # No credentials needed -- authentication is handled by the Snowflake session.
+    dev:
+      type: snowflake
+      database: MY_LISTING_DB
+      role: ACCOUNTADMIN
+      schema: PUBLIC
+
+    # For local dbt Core execution.
+    # Requires environment variables: DBT_SNOWFLAKE_ACCOUNT, DBT_SNOWFLAKE_USER, DBT_SNOWFLAKE_PASSWORD
+    local:
+      type: snowflake
+      account: "{{ env_var('DBT_SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('DBT_SNOWFLAKE_USER') }}"
+      password: "{{ env_var('DBT_SNOWFLAKE_PASSWORD') }}"
+      role: ACCOUNTADMIN
+      database: MY_LISTING_DB
+      warehouse: COMPUTE_WH
+      schema: PUBLIC
+      threads: 4
