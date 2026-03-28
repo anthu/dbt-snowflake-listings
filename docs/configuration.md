@@ -47,6 +47,25 @@ via `DESCRIBE SEMANTIC VIEW` and granted to the share -- you don't need to
 list them separately (though you can for clarity or if you want consumers to
 access the raw tables directly).
 
+## `listing_ref` and Uniform Listing Locators
+
+[Snowflake documents](https://docs.snowflake.com/en/user-guide/collaboration/listings/organizational/org-listing-query)
+querying organizational listing data with a **Uniform Listing Locator (ULL)**.
+
+The package macro `dbt_snowflake_listings.listing_ref` builds a qualified reference
+from the listing name and a `ref()` to a model that is part of the share:
+
+```sql
+SELECT *
+FROM {{ dbt_snowflake_listings.listing_ref('MY_LISTING', ref('my_shared_table')) }}
+```
+
+It expands to the ULL identifier plus `schema` and `identifier` from the relation
+returned by `ref()`. That matches producer-side projects where the shared objects
+live in your dbt DAG. **Consumers** in another account must still use the schema
+and object names as the listing exposes them; align your model names and
+`generate_schema_name` behavior with what subscribers will see.
+
 ## Listing Manifest
 
 The `listing_manifest` config is a dict that maps directly to the

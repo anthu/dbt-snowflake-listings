@@ -1,0 +1,3 @@
+packages:
+  - git: "https://github.com/anthu/dbt-snowflake-listings.git"
+    revision: v0.2.1

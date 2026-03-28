@@ -18,6 +18,7 @@ are created and managed automatically -- fully integrated into the dbt DAG.
 - **`--full-refresh` support** -- drops and recreates listings from scratch
 - **Idempotent** -- re-running `dbt run` updates existing listings via ALTER
 - **dbt Projects on Snowflake** -- deploy and run natively in Snowflake
+- **`listing_ref()` macro** -- build [ULL-based](https://docs.snowflake.com/en/user-guide/collaboration/listings/organizational/org-listing-query) SQL references to objects in an organization listing
 
 ## Prerequisites
 
@@ -38,7 +39,7 @@ Add to your `packages.yml`:
 ```yaml
 packages:
   - git: "https://github.com/anthu/dbt-snowflake-listings.git"
-    revision: v0.2.0
+    revision: v0.2.1
 ```
 
 Then run:
@@ -131,18 +132,19 @@ dbt will:
 
 | Topic | Description |
 |-------|-------------|
-| [Configuration Reference](docs/configuration.md) | Organization & external listing config, sharing models, manifest fields |
+| [Configuration Reference](docs/configuration.md) | Organization & external listing config, sharing models, `listing_ref` / ULL, manifest fields |
 | [Knowledge Extensions](docs/knowledge-extensions.md) | Semantic Views and Cortex Search Services |
 | [Lifecycle Behavior](docs/lifecycle.md) | What happens on each `dbt run`, `--full-refresh`, manifest changes |
 | [Run-Operation Macros](docs/macros.md) | Ad-hoc operations: drop, show, describe, grant |
 | [dbt Projects on Snowflake](docs/snowflake-projects.md) | Deploy, execute, and schedule listings natively in Snowflake |
+| [Native dbt listing DDL repro](docs/snowflake-native-dbt-listing-repro.md) | Text for Snowflake support / product when hosted dbt truncates listing SQL |
 
 ## Example
 
 See [`examples/snowflake_sample_data/`](examples/snowflake_sample_data/) for a
-complete working example that shares TPC-H tables and a Semantic View via an
-organization listing, with instructions for both local dbt Core and dbt Projects
-on Snowflake deployment.
+complete working example that shares TPC-H staging tables via an organization
+listing. The dbt project is under `sources/dbt_example/`; `setup.sql` and
+`manifest.yaml` support native dbt deploy and DCM Projects layouts.
 
 ## Development
 

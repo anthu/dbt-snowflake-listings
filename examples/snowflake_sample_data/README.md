@@ -1,230 +1,154 @@
-# Example: TPC-H Sample Data with Semantic View
+# Example: TPC-H sample data organization listing
 
-This example demonstrates how to use `dbt_snowflake_listings` together with
-[`Snowflake-Labs/dbt_semantic_view`](https://github.com/Snowflake-Labs/dbt_semantic_view)
-to create an organization listing that shares TPC-H data tables **and** a
-Semantic View for Cortex Analyst integration.
+This example uses `dbt_snowflake_listings` to build an **organization listing**
+that shares TPC-H staging tables from `SNOWFLAKE_SAMPLE_DATA` via a Snowflake
+share. The dbt project lives under **`sources/dbt_example/`**; the repo root
+here (`manifest.yaml`, `setup.sql`) aligns with a **DCM Projects** layout for
+[`DEFINE DBT PROJECT`](https://docs.snowflake.com/en/LIMITEDACCESS/dcm-projects/dcm-projects-early-access).
+
+## Layout
+
+```text
+examples/snowflake_sample_data/
+  manifest.yaml          # DCM-oriented notes + metadata (see Snowflake DCM docs)
+  setup.sql              # Database + network rule + EAI (run once per account)
+  README.md
+  sources/
+    dbt_example/         # dbt project root (models, packages.yml, profiles)
+      dbt_project.yml
+      packages.yml
+      profiles.yml
+      macros/
+      models/
+```
 
 ## What it does
 
-1. **Staging models** copy a subset of TPC-H data from the read-only
-   `SNOWFLAKE_SAMPLE_DATA` database into transient tables
-2. **Semantic view** defines business-friendly dimensions, facts, and metrics
-   over the staging tables using the `dbt_semantic_view` package
-3. **Listing model** creates a Snowflake share containing the tables and the
-   semantic view, then publishes an organization listing
+1. **Staging models** copy a subset of TPC-H data into **transient** tables.
+2. **Listing model** creates a share and an **organization listing** with a YAML manifest.
 
-The package auto-detects the object type for each `ref()` -- tables get
-`GRANT SELECT ON TABLE`, the semantic view gets `GRANT REFERENCES` +
-`GRANT SELECT ON SEMANTIC VIEW` plus automatic grants on underlying tables.
+## Native dbt on Snowflake: dollar-quoted listing DDL
+
+If you maintain **other** dbt packages or custom materializations that emit
+`CREATE … AS $$ … $$` inside a single `statement()`, **dbt Projects on Snowflake**
+can truncate that SQL and return `syntax error … unexpected '<EOF>'`, while
+**dbt Core** + open-source `dbt-snowflake` often succeed. This package works
+around that by wrapping listing DDL in **`EXECUTE IMMEDIATE $$ … $$`**.
+
+**Pin a released package version** (see `sources/dbt_example/packages.yml`) that
+includes that workaround — do not rely on floating `main` for production deploys.
+Details: [dbt Projects on Snowflake](../../docs/snowflake-projects.md).
 
 ## Prerequisites
 
-- Snowflake account with `ACCOUNTADMIN` role (or a role with
-  `CREATE ORGANIZATION LISTING`, `CREATE SHARE`, and `CREATE SEMANTIC VIEW`)
-- `SNOWFLAKE_SAMPLE_DATA` database available (shared by default)
-- dbt Core >= 1.7 with `dbt-snowflake` adapter (for local execution)
-- Snowflake CLI >= 3.13.0 (for dbt Projects on Snowflake)
+- Role with `CREATE ORGANIZATION LISTING`, `CREATE SHARE`, and object DDL in `MY_LISTING_DB`
+- `SNOWFLAKE_SAMPLE_DATA` available
+- dbt Core >= 1.7 + `dbt-snowflake` for local runs
+- Snowflake CLI for native dbt deploy
 
 ## Profiles
 
-The included `profiles.yml` has two targets:
+See `sources/dbt_example/profiles.yml` (and `.example`):
 
 | Target | Use case | Authentication |
 |--------|----------|----------------|
-| `dev` (default) | dbt Projects on Snowflake | None -- Snowflake session handles auth |
-| `local` | Local dbt Core execution | Environment variables (`DBT_SNOWFLAKE_ACCOUNT`, `DBT_SNOWFLAKE_USER`, `DBT_SNOWFLAKE_PASSWORD`) |
+| `dev` (default) | dbt Projects on Snowflake | Session auth |
+| `local` | Local dbt Core | `DBT_SNOWFLAKE_*` env vars |
 
-> **Developing the package locally?** Temporarily replace the git dependency in
-> `packages.yml` with `- local: ../../` to test against your working copy.
-
-## File structure
-
-```
-models/
-├── staging/                          # Transient tables from SNOWFLAKE_SAMPLE_DATA
-│   ├── _staging__models.yml
-│   ├── stg_tpch_nation.sql           # 25 nations
-│   ├── stg_tpch_region.sql           # 5 regions
-│   ├── stg_tpch_customer.sql         # 5,000 customers
-│   └── stg_tpch_orders.sql           # 10,000 orders
-├── semantic/                         # Semantic view via dbt_semantic_view
-│   ├── _semantic__models.yml
-│   └── customer_analytics_sv.sql
-└── listings/                         # Organization listing
-    ├── _listings__models.yml         # Listing manifest (native YAML)
-    └── tpch_sample_listing.sql       # share_models() with all refs
-```
-
-All object types go through a single `share_models()` call:
-
-```sql
-{{ dbt_snowflake_listings.share_models([
-    ref('stg_tpch_nation'),
-    ref('stg_tpch_region'),
-    ref('stg_tpch_customer'),
-    ref('stg_tpch_orders'),
-    ref('customer_analytics_sv'),   -- semantic view, auto-detected
-]) }}
-```
+Local dev against a **git** checkout of this repo: in `packages.yml` you may use
+`- local: ../../../` temporarily (three levels up from `sources/dbt_example/` to
+the package root). Native Snowflake **cannot** use parent `local:` paths — use a
+git `revision` there.
 
 ---
 
 ## Option A: Run locally with dbt Core
 
-### 1. Install dependencies
-
 ```bash
-cd examples/snowflake_sample_data
+cd examples/snowflake_sample_data/sources/dbt_example
 dbt deps
-```
-
-### 2. Configure credentials
-
-Set environment variables (the `local` target in `profiles.yml` reads these):
-
-```bash
-export DBT_SNOWFLAKE_ACCOUNT="your-account"
-export DBT_SNOWFLAKE_USER="your-user"
-export DBT_SNOWFLAKE_PASSWORD="your-password"
-```
-
-### 3. Run
-
-```bash
+export DBT_SNOWFLAKE_ACCOUNT="..." DBT_SNOWFLAKE_USER="..." DBT_SNOWFLAKE_PASSWORD="..."
 dbt run --target local
 ```
 
-### 4. Verify
+Verify / clean up (from the same directory):
 
 ```bash
 dbt run-operation dbt_snowflake_listings.show_listings
 dbt run-operation dbt_snowflake_listings.describe_listing \
-    --args '{listing_name: TPCH_SAMPLE_LISTING}'
-```
-
-### 5. Clean up
-
-```bash
+  --args '{listing_name: TPCH_SAMPLE_LISTING}'
 dbt run-operation dbt_snowflake_listings.drop_listing \
-    --args '{listing_name: TPCH_SAMPLE_LISTING, drop_share: TPCH_SAMPLE_SHARE}'
+  --args '{listing_name: TPCH_SAMPLE_LISTING, drop_share: TPCH_SAMPLE_SHARE}'
 ```
 
 ---
 
-## Option B: Run as a dbt Project on Snowflake
+## Option B: dbt Projects on Snowflake (CLI)
 
-dbt Projects on Snowflake lets you deploy and execute dbt projects natively
-inside Snowflake -- no external compute or credentials management required.
+### 1. Account bootstrap
 
-### 1. Set up external access integration (for dbt deps)
+Run [`setup.sql`](setup.sql) in Worksheets or `snow sql` (edit integration name /
+`GRANT` role to match your account). It creates `MY_LISTING_DB`, egress network
+rule `DBT_PACKAGES_NETWORK_RULE`, and integration `DBT_PACKAGES_ACCESS`.
 
-The project depends on two remote packages. Create a network rule and
-external access integration so Snowflake can download them:
+### 2. Git repository (if deploying from Git)
 
-```sql
-CREATE OR REPLACE NETWORK RULE dbt_packages_network_rule
-    MODE = EGRESS
-    TYPE = HOST_PORT
-    VALUE_LIST = ('hub.getdbt.com', 'codeload.github.com');
+Same as before: API integration + Git repo pointing at this repository. The path
+**inside the repo** to the dbt project is:
 
-CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION dbt_packages_access
-    ALLOWED_NETWORK_RULES = (dbt_packages_network_rule)
-    ENABLED = TRUE;
+`examples/snowflake_sample_data/sources/dbt_example`
+
+### 3. Deploy
+
+From the **git repo root** on your machine:
+
+```bash
+snow dbt deploy TPCH_SAMPLE_DBT_EXAMPLE \
+  --connection <your_connection> \
+  --source examples/snowflake_sample_data/sources/dbt_example \
+  --profiles-dir examples/snowflake_sample_data/sources/dbt_example \
+  --default-target dev \
+  --external-access-integration DBT_PACKAGES_ACCESS
 ```
 
-### 2. Connect Git repository
-
-```sql
-CREATE OR REPLACE SECRET git_secret
-    TYPE = password
-    USERNAME = '<github_user>'
-    PASSWORD = '<github_pat>';
-
-CREATE OR REPLACE API INTEGRATION git_api_integration
-    API_PROVIDER = git_https_api
-    API_ALLOWED_PREFIXES = ('https://github.com/<your-org>')
-    ALLOWED_AUTHENTICATION_SECRETS = (git_secret)
-    ENABLED = TRUE;
-
-CREATE OR REPLACE GIT REPOSITORY my_db.my_schema.marketplace_listing_repo
-    API_INTEGRATION = git_api_integration
-    GIT_CREDENTIALS = git_secret
-    ORIGIN = 'https://github.com/<your-org>/dbt-snowflake-listings.git';
-
-ALTER GIT REPOSITORY my_db.my_schema.marketplace_listing_repo FETCH;
-```
-
-### 3. Deploy the dbt project
+Or SQL:
 
 ```sql
 CREATE OR REPLACE DBT PROJECT my_db.my_schema.tpch_sample_project
-    FROM '@my_db.my_schema.marketplace_listing_repo/branches/main/examples/snowflake_sample_data'
+    FROM '@my_db.my_schema.my_repo/branches/main/examples/snowflake_sample_data/sources/dbt_example'
     DEFAULT_TARGET = 'dev'
-    EXTERNAL_ACCESS_INTEGRATIONS = (dbt_packages_access);
-```
-
-Or with Snowflake CLI:
-
-```bash
-snow dbt deploy tpch_sample_project \
-    --source ./examples/snowflake_sample_data \
-    --profiles-dir ./examples/snowflake_sample_data \
-    --default-target dev \
-    --external-access-integration dbt_packages_access
+    EXTERNAL_ACCESS_INTEGRATIONS = (DBT_PACKAGES_ACCESS);
 ```
 
 ### 4. Execute
 
-```sql
-EXECUTE DBT PROJECT my_db.my_schema.tpch_sample_project
-    ARGS = 'run --target dev';
-```
-
-Or with Snowflake CLI:
-
 ```bash
-snow dbt execute tpch_sample_project run --target dev
+snow dbt execute --connection <your_connection> TPCH_SAMPLE_DBT_EXAMPLE run --target dev
 ```
 
-### 5. Schedule with a Snowflake task
-
-```sql
-CREATE OR ALTER TASK my_db.my_schema.refresh_tpch_listing
-    WAREHOUSE = COMPUTE_WH
-    SCHEDULE = '60 MINUTES'
-AS
-    EXECUTE DBT PROJECT my_db.my_schema.tpch_sample_project
-        ARGS = 'run --target dev';
-
-ALTER TASK my_db.my_schema.refresh_tpch_listing RESUME;
-```
-
-### 6. Monitor
-
-```sql
-DESCRIBE DBT PROJECT my_db.my_schema.tpch_sample_project;
-
-SELECT *
-FROM TABLE(INFORMATION_SCHEMA.TASK_HISTORY(
-    TASK_NAME => 'REFRESH_TPCH_LISTING'
-))
-ORDER BY SCHEDULED_TIME DESC
-LIMIT 10;
-```
+(`--connection` must appear **before** the project name.)
 
 ---
 
-## DAG visualization
+## Option C: DCM Projects + DEFINE DBT PROJECT
+
+See [DCM Projects overview](https://docs.snowflake.com/en/user-guide/dcm-projects/dcm-projects-overview)
+and [early-access dbt](https://docs.snowflake.com/en/LIMITEDACCESS/dcm-projects/dcm-projects-early-access).
+
+- DCM project directory: **`examples/snowflake_sample_data/`** (this folder).
+- dbt subtree: **`sources/dbt_example/`** — use `from 'sources/dbt_example'` in
+  `DEFINE DBT PROJECT` (syntax varies by DCM release; see `manifest.yaml` comments).
+- Run **`setup.sql`** once (or attach equivalent DDL as a DCM **pre-hook**).
+- Reference integration name in `EXTERNAL_ACCESS_INTEGRATIONS` on the DBT PROJECT
+  definition (match `setup.sql` or your naming).
+
+---
+
+## DAG
 
 ```
-stg_tpch_customer ──┐
-stg_tpch_orders ────┤
-stg_tpch_nation ────┼── customer_analytics_sv ──┐
-stg_tpch_region ────┘                           │
-                    └───────────────────────────┼── tpch_sample_listing
-                                                     (share + listing)
+stg_tpch_nation  ─┐
+stg_tpch_region  ─┤
+stg_tpch_customer┼── tpch_sample_listing (share + listing)
+stg_tpch_orders  ─┘
 ```
-
-All staging models and the semantic view feed into the listing model via
-`ref()`. dbt runs them in the correct order automatically.

@@ -1,0 +1,23 @@
+# Snowflake DCM Projects — layout alignment for this example
+# -----------------------------------------------------------------------------
+# The dbt project root lives at: sources/dbt_example/
+#
+# Authoritative syntax is version-specific. See:
+#   https://docs.snowflake.com/en/user-guide/dcm-projects/dcm-projects-overview
+#   https://docs.snowflake.com/en/LIMITEDACCESS/dcm-projects/dcm-projects-early-access
+#
+# Early-access pattern for DEFINE DBT PROJECT (illustrative — confirm on your account):
+#
+#   DEFINE DBT PROJECT MY_LISTING_DB.PUBLIC.TPCH_SAMPLE_DBT_EXAMPLE
+#       FROM 'sources/dbt_example'
+#       DEFAULT_TARGET = 'dev'
+#       EXTERNAL_ACCESS_INTEGRATIONS = (DBT_PACKAGES_ACCESS);
+#
+# Run setup.sql (or equivalent PRE_HOOK DDL) before first deploy so network rule,
+# external access integration, and MY_LISTING_DB exist.
+# -----------------------------------------------------------------------------
+metadata:
+  name: snowflake_sample_data_listing_example
+  description: >
+    DCM project wrapper for the TPC-H organization listing dbt example.
+    dbt subtree is under sources/dbt_example/.

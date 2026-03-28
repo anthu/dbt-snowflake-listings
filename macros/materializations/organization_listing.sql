@@ -99,23 +99,18 @@
 
         {{ dbt_snowflake_listings._log_action('CREATE', 'ORGANIZATION LISTING', listing_name) }}
 
-        {# Snowflake's manifest validation for CREATE ORGANIZATION LISTING
-           internally requires current_schema(), even though listings are
-           account-level objects. In native dbt sessions (EXECUTE DBT PROJECT),
-           the session schema may be unset and USE SCHEMA alone doesn't
-           propagate to the validation engine. Wrapping in a scripting block
-           ensures schema context is set within the same execution unit. #}
+        {# EXECUTE IMMEDIATE $$...$$: native dbt on Snowflake can split on ';' before the
+           manifest $$ block, truncating CREATE ORGANIZATION LISTING. Outer $$ keeps one batch. #}
         {% call statement('main', fetch_result=false) %}
-            BEGIN
-                USE SCHEMA {{ model.database }}.{{ model.schema }};
-                CREATE ORGANIZATION LISTING {{ listing_name }}
-                    SHARE {{ share_name }}
-                    AS
-                    $$
+            EXECUTE IMMEDIATE $$
+            CREATE ORGANIZATION LISTING {{ listing_name }}
+            SHARE {{ share_name }}
+            AS
+            $DBT_SL_MANIFEST$
 {{ manifest_yaml }}
-$$
-                    PUBLISH = {{ publish | upper }};
-            END;
+$DBT_SL_MANIFEST$
+            PUBLISH = {{ publish | upper }};
+            $$;
         {% endcall %}
 
     {% else %}
@@ -123,14 +118,14 @@ $$
         {{ dbt_snowflake_listings._log_action('ALTER', 'ORGANIZATION LISTING', listing_name) }}
 
         {% call statement('main', fetch_result=false) %}
-            BEGIN
-                USE SCHEMA {{ model.database }}.{{ model.schema }};
-                ALTER LISTING {{ listing_name }}
-                    AS
-                    $$
+            EXECUTE IMMEDIATE $$
+            ALTER LISTING {{ listing_name }}
+            AS
+            $DBT_SL_MANIFEST$
 {{ manifest_yaml }}
-$$;
-            END;
+$DBT_SL_MANIFEST$
+            ;
+            $$;
         {% endcall %}
 
         {% if publish %}

@@ -1,5 +1,5 @@
 name: 'snowflake_sample_data_listing_example'
-version: '0.1.0'
+version: '0.2.1'
 config-version: 2
 
 profile: 'example'
@@ -12,7 +12,5 @@ models:
     staging:
       +materialized: table
       +transient: true
-    semantic:
-      +materialized: semantic_view
     listings:
       +materialized: organization_listing

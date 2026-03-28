@@ -1,5 +1,9 @@
 # Run-Operation Macros
 
+For compile-time helpers used in model SQL (for example ULL-based references to
+objects inside an organization listing), see
+[`listing_ref` in the Configuration Reference](configuration.md#listing_ref-and-uniform-listing-locators).
+
 For ad-hoc operations outside the `dbt run` lifecycle:
 
 ## drop_listing

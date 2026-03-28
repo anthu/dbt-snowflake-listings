@@ -1,3 +1,4 @@
+{# Native dbt batching + listing DDL: see ../../../README.md and repo docs/snowflake-projects.md #}}
 {{ config(
     materialized='organization_listing',
     meta={
@@ -11,5 +12,4 @@
     ref('stg_tpch_region'),
     ref('stg_tpch_customer'),
     ref('stg_tpch_orders'),
-    ref('customer_analytics_sv'),
 ]) }}
