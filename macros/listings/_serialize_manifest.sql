@@ -43,7 +43,6 @@
                                     {% do lines.append(prefix ~ '    ' ~ remaining_key ~ ':') %}
                                     {{ dbt_snowflake_listings._serialize_yaml_node(remaining_val, lines, indent + 6) }}
                                 {% elif remaining_val is iterable and remaining_val is not string %}
-                                    {% do lines.append(prefix ~ '    ' ~ remaining_key ~ ':') %}
                                     {{ dbt_snowflake_listings._serialize_yaml_node({remaining_key: remaining_val}, lines, indent + 4) }}
                                 {% else %}
                                     {% do lines.append(prefix ~ '    ' ~ remaining_key ~ ': ' ~ dbt_snowflake_listings._yaml_scalar(remaining_val)) %}
@@ -81,8 +80,9 @@
            or "'" in value or '%' in value or '@' in value
            or value | lower in ('true', 'false', 'yes', 'no', 'null', 'on', 'off')
            or value != value | trim
-           or value == '' %}
-            {{- return('"' ~ value | replace('\\', '\\\\') | replace('"', '\\"') ~ '"') -}}
+           or value == ''
+           or '\n' in value %}
+            {{- return('"' ~ value | replace('\\', '\\\\') | replace('"', '\\"') | replace('\n', '\\n') ~ '"') -}}
         {% else %}
             {{- return(value) -}}
         {% endif %}
